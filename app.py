@@ -112,6 +112,7 @@ def search_youtube_videos(keyword):
             video_id = response["items"][0]["id"]["videoId"]
             title = response["items"][0]["snippet"]["title"]
             thumbnail = response["items"][0]["snippet"]["thumbnails"]["default"]["url"]
+            print(thumbnail)
             return {
                 "video_id": video_id,
                 "title": title,
