@@ -1,0 +1,146 @@
+<!-- templates/search.html -->
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .favorite-btn {
+        transition: color 0.2s;
+    }
+    .favorite-btn:hover {
+        color: #f59e0b;
+    }
+    .favorite-btn.active {
+        color: #f59e0b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-center">Find Your Next Video</h2>
+            <div class="space-y-4">
+                <textarea id="userInput" 
+                          class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          rows="4"
+                          placeholder="Tell me what kind of videos you want to watch..."></textarea>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="getRecommendations()" 
+                            class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Get Recommendations
+                    </button>
+                    <button onclick="getRandomPrompt()"
+                            class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                        Random Topic
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden">
+            <div class="flex justify-center items-center space-x-2">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                <span class="text-gray-600">Generating recommendations...</span>
+            </div>
+        </div>
+
+        <div id="videosGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getRecommendations() {
+    const userInput = $('#userInput').val();
+    if (!userInput) return;
+
+    $('#loading').removeClass('hidden');
+    $('#videosGrid').empty();
+
+    $.ajax({
+        url: '/get_recommendations',
+        method: 'POST',
+        data: { user_input: userInput },
+        success: function(response) {
+            $('#loading').addClass('hidden');
+            displayVideos(response.keywords, response.videos);
+        },
+        error: function() {
+            $('#loading').addClass('hidden');
+            alert('Error getting recommendations');
+        }
+    });
+}
+
+function displayVideos(keywords, videos) {
+    const grid = $('#videosGrid');
+    grid.empty();
+
+    videos.forEach((video, index) => {
+        if (!video || !video.video_id) return;
+
+        const videoDiv = $('<div>').addClass('bg-white rounded-lg shadow-lg overflow-hidden');
+        
+        // Video header with keyword and favorite button
+        const header = $('<div>').addClass('p-4 bg-gray-50 flex justify-between items-center');
+        header.append($('<div>').addClass('text-sm text-gray-600 italic').text(`Keyword: "${keywords[index]}"`));
+        
+        const favoriteBtn = $('<button>')
+            .addClass('favorite-btn ' + (video.is_favorite ? 'active' : ''))
+            .html('<i class="fas fa-star text-xl"></i>')
+            .click(() => toggleFavorite(video.video_id, video.title, keywords[index], favoriteBtn));
+        header.append(favoriteBtn);
+        videoDiv.append(header);
+
+        // Video embed
+        const videoContainer = $('<div>').addClass('relative pt-[56.25%]'); // 16:9 aspect ratio
+        const iframe = $('<iframe>')
+            .attr('src', `https://www.youtube.com/embed/${video.video_id}?rel=0`)
+            .attr('frameborder', '0')
+            .attr('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture')
+            .attr('allowfullscreen', true)
+            .addClass('absolute top-0 left-0 w-full h-full');
+        videoContainer.append(iframe);
+        videoDiv.append(videoContainer);
+
+        // Video title
+        const titleDiv = $('<div>')
+            .addClass('p-4 text-gray-800 font-medium')
+            .text(video.title);
+        videoDiv.append(titleDiv);
+
+        grid.append(videoDiv);
+    });
+}
+
+function toggleFavorite(videoId, videoTitle, keyword, button) {
+    $.ajax({
+        url: '/toggle_favorite',
+        method: 'POST',
+        data: {
+            video_id: videoId,
+            video_title: videoTitle,
+            keyword: keyword
+        },
+        success: function(response) {
+            if (response.is_favorite) {
+                button.addClass('active');
+            } else {
+                button.removeClass('active');
+            }
+        },
+        error: function() {
+            alert('Error updating favorite status');
+        }
+    });
+}
+
+function getRandomPrompt() {
+    $.get('/random_prompt', function(data) {
+        $('#userInput').val(data.prompt);
+    });
+}
+</script>
+{% endblock %}

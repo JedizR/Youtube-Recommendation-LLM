@@ -1,0 +1,92 @@
+<!-- templates/favorites.html -->
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .favorite-btn {
+        transition: color 0.2s;
+    }
+    .favorite-btn:hover {
+        color: #dc2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4 text-center">Your Favorite Videos</h2>
+            {% if not favorites %}
+                <div class="text-center text-gray-600 py-8">
+                    <p class="mb-4">You haven't added any favorites yet.</p>
+                    <a href="{{ url_for('search') }}" 
+                       class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Discover Videos
+                    </a>
+                </div>
+            {% else %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for video in favorites %}
+                    <div class="bg-white rounded-lg shadow-lg overflow-hidden" id="video-{{ video.video_id }}">
+                        <!-- Video header with keyword and remove button -->
+                        <div class="p-4 bg-gray-50 flex justify-between items-center">
+                            <div class="text-sm text-gray-600 italic">Keyword: "{{ video.keyword }}"</div>
+                            <button onclick="removeFavorite('{{ video.video_id }}')" 
+                                    class="favorite-btn text-gray-600">
+                                <i class="fas fa-trash text-xl"></i>
+                            </button>
+                        </div>
+
+                        <!-- Video embed -->
+                        <div class="relative pt-[56.25%]">
+                            <iframe src="https://www.youtube.com/embed/{{ video.video_id }}?rel=0"
+                                    frameborder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowfullscreen
+                                    class="absolute top-0 left-0 w-full h-full">
+                            </iframe>
+                        </div>
+
+                        <!-- Video title -->
+                        <div class="p-4 text-gray-800 font-medium">
+                            {{ video.title }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function removeFavorite(videoId) {
+    if (!confirm('Are you sure you want to remove this video from favorites?')) return;
+
+    $.ajax({
+        url: '/toggle_favorite',
+        method: 'POST',
+        data: {
+            video_id: videoId
+        },
+        success: function(response) {
+            if (!response.is_favorite) {
+                $(`#video-${videoId}`).fadeOut(300, function() {
+                    $(this).remove();
+                    // Check if there are any videos left
+                    if ($('.grid').children().length === 0) {
+                        location.reload(); // Reload to show the empty state
+                    }
+                });
+            }
+        },
+        error: function() {
+            alert('Error removing video from favorites');
+        }
+    });
+}
+</script>
+{% endblock %}
