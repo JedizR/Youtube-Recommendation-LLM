@@ -1,4 +1,3 @@
-# app.py
 import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from mistralai import Mistral
@@ -15,7 +14,7 @@ import re
 dotenv.load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-here')  # Change this in production
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your-secret-key-here')
 
 # Initialize Mistral client
 mistral_client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
@@ -296,7 +295,7 @@ def random_prompt():
         return jsonify({"prompt": generated_prompt})
     except Exception as e:
         print(f"Error generating prompt: {e}")
-        # Fallback prompt in case of API error
+        
         return jsonify({
             "prompt": "I want to explore fascinating documentaries about nature and wildlife conservation efforts around the world"
         })
