@@ -9,6 +9,24 @@
     .favorite-btn:hover {
         color: #dc2626;
     }
+    iframe {
+        display: block !important;
+        width: 100% !important;
+        height: 200px !important;
+        min-height: 200px;
+    }
+    .video-container {
+        position: relative;
+        width: 100%;
+        padding-top: 52.5%; /* Maintain 16:9 aspect ratio */
+    }
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
 </style>
 {% endblock %}
 
@@ -38,13 +56,12 @@
                             </button>
                         </div>
 
-                        <!-- Video embed -->
-                        <div class="relative pt-[56.25%]">
-                            <iframe src="https://www.youtube.com/embed/{{ video.video_id }}?rel=0"
+                        <!-- Video embed with correct height -->
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/{{ video.video_id }}?autoplay=1&mute=1&enablejsapi=1"
                                     frameborder="0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowfullscreen
-                                    class="absolute top-0 left-0 w-full h-full">
+                                    allowfullscreen>
                             </iframe>
                         </div>
 
@@ -76,9 +93,8 @@ function removeFavorite(videoId) {
             if (!response.is_favorite) {
                 $(`#video-${videoId}`).fadeOut(300, function() {
                     $(this).remove();
-                    // Check if there are any videos left
                     if ($('.grid').children().length === 0) {
-                        location.reload(); // Reload to show the empty state
+                        location.reload();
                     }
                 });
             }

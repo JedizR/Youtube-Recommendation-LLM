@@ -64,20 +64,30 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Sample prompts for random generation
-SAMPLE_PROMPTS = [
-    "I want to learn about space exploration",
-    "Show me some cooking tutorials",
-    "I'm interested in historical documentaries",
-    "I want to watch gaming content",
-    "Show me DIY home improvement videos",
-    "I want to learn about artificial intelligence",
-]
+SYSTEM_PROMPT = """As a YouTube search optimization expert, generate 4 highly effective search keywords based on the user's interest. Your task is to:
 
-SYSTEM_PROMPT = """Given a user's interest in watching videos, generate 4 different search keywords that would help find relevant YouTube videos. Return ONLY a JSON array with exactly 4 strings, no additional text. Make the keywords specific and varied to cover different aspects of the topic.
+1. Analyze User Intent:
+   - Understand the core topic and potential sub-interests
+   - Consider different skill levels and perspectives
+   - Identify related themes that might interest the user
 
-Example input: "I want to learn about machine learning"
-Example output: ["introduction to machine learning tutorial", "machine learning projects for beginners", "how neural networks work explained", "practical machine learning applications"]"""
+2. Generate Keywords That:
+   - Are between 5-8 words long for optimal YouTube search effectiveness
+   - Use YouTube-specific search patterns that viewers commonly employ
+   - Include a mix of educational, entertainment, and practical content angles
+   - Incorporate popular YouTube-specific terms like "guide", "tutorial", "explained", "compilation", etc. where appropriate
+
+3. Ensure Diversity:
+   - Each keyword must focus on a distinct aspect of the topic
+   - Mix different content types (how-to, explanatory, showcase, deep-dive)
+   - Include both beginner-friendly and advanced content
+   - Cover both theoretical and practical aspects when applicable
+
+Return ONLY a JSON array with exactly 4 strings, no additional text. Format each keyword to maximize YouTube search relevance.
+
+Example input: "I want to learn digital art"
+Example output: ["digital art tutorial for complete beginners 2024", "professional digital artist workspace setup guide", "advanced digital painting techniques masterclass explained", "digital art tips and tricks for improvement"]"""
+
 
 def get_search_keywords(user_input):
     """Get search keywords from Mistral AI"""
@@ -102,7 +112,7 @@ def search_youtube_videos(keyword):
             q=keyword,
             type="video",
             maxResults=1,
-            regionCode="US",
+            regionCode="TH",
             relevanceLanguage="en",
             safeSearch="moderate"
         )
@@ -241,10 +251,55 @@ def get_recommendations():
         "videos": videos
     })
 
+PROMPT_GENERATION_SYSTEM_PROMPT = """Generate a SINGLE, truly random topic for YouTube video discovery. Follow these rules strictly:
+
+1. Word Count: Must be between 5-12 words, no exceptions
+2. Topic Selection:
+   - Pick from ANY possible YouTube content category (education, entertainment, hobby, lifestyle, tech, etc.)
+   - Each generation should be from a DIFFERENT category than previous ones
+   - Include niche or unexpected topics
+   - Can be about ANYTHING that exists on YouTube (except adult/inappropriate content)
+3. Format:
+   - Start with variations like "Show me", "I want to see", "Looking for", "Need videos about", etc.
+   - Make it casual and conversational
+   - DON'T always use the same starting phrases
+
+IMPORTANT:
+- NEVER repeat similar themes or patterns
+- Each generation should feel completely different from the last
+- Don't stick to common topics; be creative and unexpected
+- Keep it simple but interesting
+
+Example diverse outputs:
+- Show me people building homes in unusual places
+- Need videos about rare fruit farming techniques
+- Looking for forgotten Olympic sports history
+- Want to see traditional pottery making processes
+- Show me unusual musical instruments from Asia
+- Need videos about modern train systems worldwide"""
+
+
+
 @app.route('/random_prompt')
 @login_required
 def random_prompt():
-    return jsonify({"prompt": random.choice(SAMPLE_PROMPTS)})
+    """Get a random prompt using Mistral AI"""
+    try:
+        response = mistral_client.chat.complete(
+            model=model,
+            messages=[
+                {"role": "system", "content": PROMPT_GENERATION_SYSTEM_PROMPT},
+                {"role": "user", "content": "Generate a YouTube discovery prompt"}
+            ]
+        )
+        generated_prompt = response.choices[0].message.content.strip()
+        return jsonify({"prompt": generated_prompt})
+    except Exception as e:
+        print(f"Error generating prompt: {e}")
+        # Fallback prompt in case of API error
+        return jsonify({
+            "prompt": "I want to explore fascinating documentaries about nature and wildlife conservation efforts around the world"
+        })
 
 @app.route('/toggle_favorite', methods=['POST'])
 @login_required

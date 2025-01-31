@@ -12,6 +12,11 @@
     .favorite-btn.active {
         color: #f59e0b;
     }
+    iframe {
+        display: block !important;
+        width: 100% !important;
+        height: 200px !important;
+    }
 </style>
 {% endblock %}
 
@@ -64,6 +69,7 @@ function getRecommendations() {
         method: 'POST',
         data: { user_input: userInput },
         success: function(response) {
+            console.log("API Response:", response);
             $('#loading').addClass('hidden');
             displayVideos(response.keywords, response.videos);
         },
@@ -79,14 +85,16 @@ function displayVideos(keywords, videos) {
     grid.empty();
 
     videos.forEach((video, index) => {
-        if (!video || !video.video_id) return;
+        if (!video || !video.video_id) {
+            console.error("Invalid video data:", video);
+            return;
+        }
 
         const videoDiv = $('<div>').addClass('bg-white rounded-lg shadow-lg overflow-hidden');
-        
-        // Video header with keyword and favorite button
+
         const header = $('<div>').addClass('p-4 bg-gray-50 flex justify-between items-center');
         header.append($('<div>').addClass('text-sm text-gray-600 italic').text(`Keyword: "${keywords[index]}"`));
-        
+
         const favoriteBtn = $('<button>')
             .addClass('favorite-btn ' + (video.is_favorite ? 'active' : ''))
             .html('<i class="fas fa-star text-xl"></i>')
@@ -94,21 +102,26 @@ function displayVideos(keywords, videos) {
         header.append(favoriteBtn);
         videoDiv.append(header);
 
-        // Video embed
-        const videoContainer = $('<div>').addClass('relative pt-[56.25%]'); // 16:9 aspect ratio
+        const videoContainer = $('<div>').addClass('relative w-full').css({
+            'padding-top': '52.5%',  // Maintain 16:9 aspect ratio
+            'height': 'auto'          // Allow it to adjust dynamically
+        });
+        
         const iframe = $('<iframe>')
-            .attr('src', `https://www.youtube.com/embed/${video.video_id}?rel=0`)
+            .attr('src', `https://www.youtube.com/embed/${video.video_id}?autoplay=1&mute=1&enablejsapi=1`)
             .attr('frameborder', '0')
             .attr('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture')
             .attr('allowfullscreen', true)
-            .addClass('absolute top-0 left-0 w-full h-full');
+            .addClass('absolute top-0 left-0 w-full h-full')
+            .css({
+                'height': '100%',
+                'min-height': '200px'  // Ensure minimum height
+            });
+        
         videoContainer.append(iframe);
         videoDiv.append(videoContainer);
 
-        // Video title
-        const titleDiv = $('<div>')
-            .addClass('p-4 text-gray-800 font-medium')
-            .text(video.title);
+        const titleDiv = $('<div>').addClass('p-4 text-gray-800 font-medium').text(video.title);
         videoDiv.append(titleDiv);
 
         grid.append(videoDiv);
